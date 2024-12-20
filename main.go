@@ -16,6 +16,7 @@ import (
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	necTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
+	fixstatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	vcpackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
@@ -213,34 +214,104 @@ func filterData(data dataTypes.Data, repos []string) *dataTypes.Data {
 	}
 }
 
-func filterCriteria(ca criteriaTypes.Criteria, repos []string) criteriaTypes.Criteria {
-	for i, ca := range ca.Criterias {
+func filterCriteria(root criteriaTypes.Criteria, repos []string) criteriaTypes.Criteria {
+	for i, ca := range root.Criterias {
 		if fca := filterCriteria(ca, repos); len(fca.Criterias) > 0 || len(fca.Criterions) > 0 {
-			ca.Criterias[i] = fca
+			root.Criterias[i] = fca
 		}
 	}
 
-	cns := make([]criterionTypes.Criterion, 0, len(ca.Criterions))
-	for _, cn := range ca.Criterions {
+	cns := make([]criterionTypes.Criterion, 0, len(root.Criterions))
+	for _, cn := range root.Criterions {
 		switch cn.Type {
 		case criterionTypes.CriterionTypeVersion:
-			switch cn.Version.Package.Type {
-			case vcpackageTypes.PackageTypeBinary:
-				if slices.ContainsFunc(cn.Version.Package.Binary.Repositories, func(r string) bool {
-					return slices.Contains(repos, r)
-				}) {
-					cn.Version.Package.Binary.Repositories = nil
+			switch cn.Version.FixStatus {
+			case nil: // cn.Version.Vulnerable == false
+				switch cn.Version.Package.Type {
+				case vcpackageTypes.PackageTypeBinary:
+					switch len(cn.Version.Package.Binary.Repositories) {
+					case 0:
+						cn.Version.Package.Binary.Repositories = nil
+						cns = append(cns, cn)
+					default:
+						if slices.ContainsFunc(cn.Version.Package.Binary.Repositories, func(r string) bool {
+							return slices.Contains(repos, r)
+						}) {
+							cn.Version.Package.Binary.Repositories = nil
+							cns = append(cns, cn)
+						}
+					}
+				case vcpackageTypes.PackageTypeSource:
+					switch len(cn.Version.Package.Source.Repositories) {
+					case 0:
+						cn.Version.Package.Source.Repositories = nil
+						cns = append(cns, cn)
+					default:
+						if slices.ContainsFunc(cn.Version.Package.Source.Repositories, func(r string) bool {
+							return slices.Contains(repos, r)
+						}) {
+							cn.Version.Package.Source.Repositories = nil
+							cns = append(cns, cn)
+						}
+					}
+				default:
 					cns = append(cns, cn)
 				}
-			case vcpackageTypes.PackageTypeSource:
-				if slices.ContainsFunc(cn.Version.Package.Source.Repositories, func(r string) bool {
-					return slices.Contains(repos, r)
-				}) {
-					cn.Version.Package.Source.Repositories = nil
+			default: // cn.Version.Vulnerable == true
+				switch cn.Version.FixStatus.Class {
+				case fixstatusTypes.ClassFixed:
+					switch cn.Version.Package.Type {
+					case vcpackageTypes.PackageTypeBinary:
+						if slices.ContainsFunc(cn.Version.Package.Binary.Repositories, func(r string) bool {
+							return slices.Contains(repos, r)
+						}) {
+							cn.Version.Package.Binary.Repositories = nil
+							cns = append(cns, cn)
+						}
+					case vcpackageTypes.PackageTypeSource:
+						if slices.ContainsFunc(cn.Version.Package.Source.Repositories, func(r string) bool {
+							return slices.Contains(repos, r)
+						}) {
+							cn.Version.Package.Source.Repositories = nil
+							cns = append(cns, cn)
+						}
+					default:
+						cns = append(cns, cn)
+					}
+				case fixstatusTypes.ClassUnfixed, fixstatusTypes.ClassUnknown:
+					switch cn.Version.Package.Type {
+					case vcpackageTypes.PackageTypeBinary:
+						switch len(cn.Version.Package.Binary.Repositories) {
+						case 0:
+							cn.Version.Package.Binary.Repositories = nil
+							cns = append(cns, cn)
+						default:
+							if slices.ContainsFunc(cn.Version.Package.Binary.Repositories, func(r string) bool {
+								return slices.Contains(repos, r)
+							}) {
+								cn.Version.Package.Binary.Repositories = nil
+								cns = append(cns, cn)
+							}
+						}
+					case vcpackageTypes.PackageTypeSource:
+						switch len(cn.Version.Package.Source.Repositories) {
+						case 0:
+							cn.Version.Package.Source.Repositories = nil
+							cns = append(cns, cn)
+						default:
+							if slices.ContainsFunc(cn.Version.Package.Source.Repositories, func(r string) bool {
+								return slices.Contains(repos, r)
+							}) {
+								cn.Version.Package.Source.Repositories = nil
+								cns = append(cns, cn)
+							}
+						}
+					default:
+						cns = append(cns, cn)
+					}
+				default:
 					cns = append(cns, cn)
 				}
-			default:
-				cns = append(cns, cn)
 			}
 		case criterionTypes.CriterionTypeNoneExist:
 			switch cn.NoneExist.Type {
@@ -265,7 +336,7 @@ func filterCriteria(ca criteriaTypes.Criteria, repos []string) criteriaTypes.Cri
 			cns = append(cns, cn)
 		}
 	}
-	ca.Criterions = cns
+	root.Criterions = cns
 
-	return ca
+	return root
 }
