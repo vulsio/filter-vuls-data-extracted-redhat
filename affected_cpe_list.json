@@ -1,54 +1,113 @@
-[
-  "cpe:/a:redhat:enterprise_linux:8",
-  "cpe:/a:redhat:enterprise_linux:8::appstream",
-  "cpe:/a:redhat:enterprise_linux:8::crb",
-  "cpe:/a:redhat:enterprise_linux:8::highavailability",
-  "cpe:/a:redhat:enterprise_linux:8::nfv",
-  "cpe:/a:redhat:enterprise_linux:8::realtime",
-  "cpe:/a:redhat:enterprise_linux:8::resilientstorage",
-  "cpe:/a:redhat:enterprise_linux:8::sap",
-  "cpe:/a:redhat:enterprise_linux:8::sap_hana",
-  "cpe:/a:redhat:enterprise_linux:8::supplementary",
-  "cpe:/a:redhat:enterprise_linux:9",
-  "cpe:/a:redhat:enterprise_linux:9::appstream",
-  "cpe:/a:redhat:enterprise_linux:9::crb",
-  "cpe:/a:redhat:enterprise_linux:9::highavailability",
-  "cpe:/a:redhat:enterprise_linux:9::nfv",
-  "cpe:/a:redhat:enterprise_linux:9::realtime",
-  "cpe:/a:redhat:enterprise_linux:9::resilientstorage",
-  "cpe:/a:redhat:enterprise_linux:9::sap",
-  "cpe:/a:redhat:enterprise_linux:9::sap_hana",
-  "cpe:/a:redhat:enterprise_linux:9::supplementary",
-  "cpe:/a:redhat:rhel_extras:6",
-  "cpe:/a:redhat:rhel_extras:7",
-  "cpe:/a:redhat:rhel_extras_hpn:6",
-  "cpe:/a:redhat:rhel_extras_oracle_java:6",
-  "cpe:/a:redhat:rhel_extras_oracle_java:7",
-  "cpe:/a:redhat:rhel_extras_other:6",
-  "cpe:/a:redhat:rhel_extras_other:7",
-  "cpe:/a:redhat:rhel_extras_rt:7",
-  "cpe:/a:redhat:rhel_extras_sap:6",
-  "cpe:/a:redhat:rhel_extras_sap:7",
-  "cpe:/a:redhat:rhel_extras_sap_els:6",
-  "cpe:/a:redhat:rhel_extras_sap_hana:6",
-  "cpe:/a:redhat:rhel_extras_sap_hana:7",
-  "cpe:/a:redhat:rhel_extras_sap_hana_els:6",
-  "cpe:/o:redhat:enterprise_linux:6",
-  "cpe:/o:redhat:enterprise_linux:6::client",
-  "cpe:/o:redhat:enterprise_linux:6::computenode",
-  "cpe:/o:redhat:enterprise_linux:6::server",
-  "cpe:/o:redhat:enterprise_linux:6::workstation",
-  "cpe:/o:redhat:enterprise_linux:7",
-  "cpe:/o:redhat:enterprise_linux:7::client",
-  "cpe:/o:redhat:enterprise_linux:7::computenode",
-  "cpe:/o:redhat:enterprise_linux:7::container",
-  "cpe:/o:redhat:enterprise_linux:7::containers",
-  "cpe:/o:redhat:enterprise_linux:7::server",
-  "cpe:/o:redhat:enterprise_linux:7::workstation",
-  "cpe:/o:redhat:enterprise_linux:8",
-  "cpe:/o:redhat:enterprise_linux:8::baseos",
-  "cpe:/o:redhat:enterprise_linux:9",
-  "cpe:/o:redhat:enterprise_linux:9::baseos",
-  "cpe:/o:redhat:rhel_els:6",
-  "cpe:/o:redhat:rhel_eus:6.0"
-]
+{
+  "6": {
+    "rhel-6-els": [
+      "cpe:/a:redhat:rhel_extras:6",
+      "cpe:/a:redhat:rhel_extras_hpn:6",
+      "cpe:/a:redhat:rhel_extras_oracle_java:6",
+      "cpe:/a:redhat:rhel_extras_sap:6",
+      "cpe:/a:redhat:rhel_extras_sap_els:6",
+      "cpe:/a:redhat:rhel_extras_sap_hana:6",
+      "cpe:/a:redhat:rhel_extras_sap_hana_els:6",
+      "cpe:/o:redhat:enterprise_linux:6",
+      "cpe:/o:redhat:enterprise_linux:6::client",
+      "cpe:/o:redhat:enterprise_linux:6::computenode",
+      "cpe:/o:redhat:enterprise_linux:6::server",
+      "cpe:/o:redhat:enterprise_linux:6::workstation",
+      "cpe:/o:redhat:rhel_els:6"
+    ],
+    "rhel-6-extras-including-unpatched": [
+      "cpe:/a:redhat:rhel_extras_other:6"
+    ],
+    "rhel-6-including-unpatched": [
+      "cpe:/a:redhat:rhel_extras:6",
+      "cpe:/a:redhat:rhel_extras_hpn:6",
+      "cpe:/a:redhat:rhel_extras_oracle_java:6",
+      "cpe:/a:redhat:rhel_extras_sap:6",
+      "cpe:/a:redhat:rhel_extras_sap_hana:6",
+      "cpe:/o:redhat:enterprise_linux:6",
+      "cpe:/o:redhat:enterprise_linux:6::client",
+      "cpe:/o:redhat:enterprise_linux:6::computenode",
+      "cpe:/o:redhat:enterprise_linux:6::server",
+      "cpe:/o:redhat:enterprise_linux:6::workstation",
+      "cpe:/o:redhat:rhel_eus:6.0"
+    ],
+    "rhel-6-supplementary": [
+      "cpe:/a:redhat:rhel_extras:6",
+      "cpe:/a:redhat:rhel_extras_hpn:6",
+      "cpe:/a:redhat:rhel_extras_oracle_java:6",
+      "cpe:/a:redhat:rhel_extras_sap:6",
+      "cpe:/a:redhat:rhel_extras_sap_hana:6",
+      "cpe:/o:redhat:enterprise_linux:6",
+      "cpe:/o:redhat:enterprise_linux:6::client",
+      "cpe:/o:redhat:enterprise_linux:6::computenode",
+      "cpe:/o:redhat:enterprise_linux:6::server",
+      "cpe:/o:redhat:enterprise_linux:6::workstation",
+      "cpe:/o:redhat:rhel_eus:6.0"
+    ]
+  },
+  "7": {
+    "rhel-7-extras-including-unpatched": [
+      "cpe:/a:redhat:rhel_extras_other:7"
+    ],
+    "rhel-7-including-unpatched": [
+      "cpe:/a:redhat:rhel_extras:7",
+      "cpe:/a:redhat:rhel_extras_oracle_java:7",
+      "cpe:/a:redhat:rhel_extras_rt:7",
+      "cpe:/a:redhat:rhel_extras_sap:7",
+      "cpe:/a:redhat:rhel_extras_sap_hana:7",
+      "cpe:/o:redhat:enterprise_linux:7",
+      "cpe:/o:redhat:enterprise_linux:7::client",
+      "cpe:/o:redhat:enterprise_linux:7::computenode",
+      "cpe:/o:redhat:enterprise_linux:7::container",
+      "cpe:/o:redhat:enterprise_linux:7::containers",
+      "cpe:/o:redhat:enterprise_linux:7::server",
+      "cpe:/o:redhat:enterprise_linux:7::workstation"
+    ],
+    "rhel-7-supplementary": [
+      "cpe:/a:redhat:rhel_extras:7",
+      "cpe:/a:redhat:rhel_extras_oracle_java:7",
+      "cpe:/a:redhat:rhel_extras_rt:7",
+      "cpe:/a:redhat:rhel_extras_sap:7",
+      "cpe:/a:redhat:rhel_extras_sap_hana:7",
+      "cpe:/o:redhat:enterprise_linux:7",
+      "cpe:/o:redhat:enterprise_linux:7::client",
+      "cpe:/o:redhat:enterprise_linux:7::computenode",
+      "cpe:/o:redhat:enterprise_linux:7::container",
+      "cpe:/o:redhat:enterprise_linux:7::containers",
+      "cpe:/o:redhat:enterprise_linux:7::server",
+      "cpe:/o:redhat:enterprise_linux:7::workstation"
+    ]
+  },
+  "8": {
+    "rhel-8-including-unpatched": [
+      "cpe:/a:redhat:enterprise_linux:8",
+      "cpe:/a:redhat:enterprise_linux:8::appstream",
+      "cpe:/a:redhat:enterprise_linux:8::crb",
+      "cpe:/a:redhat:enterprise_linux:8::highavailability",
+      "cpe:/a:redhat:enterprise_linux:8::nfv",
+      "cpe:/a:redhat:enterprise_linux:8::realtime",
+      "cpe:/a:redhat:enterprise_linux:8::resilientstorage",
+      "cpe:/a:redhat:enterprise_linux:8::sap",
+      "cpe:/a:redhat:enterprise_linux:8::sap_hana",
+      "cpe:/a:redhat:enterprise_linux:8::supplementary",
+      "cpe:/o:redhat:enterprise_linux:8",
+      "cpe:/o:redhat:enterprise_linux:8::baseos"
+    ]
+  },
+  "9": {
+    "rhel-9-including-unpatched": [
+      "cpe:/a:redhat:enterprise_linux:9",
+      "cpe:/a:redhat:enterprise_linux:9::appstream",
+      "cpe:/a:redhat:enterprise_linux:9::crb",
+      "cpe:/a:redhat:enterprise_linux:9::highavailability",
+      "cpe:/a:redhat:enterprise_linux:9::nfv",
+      "cpe:/a:redhat:enterprise_linux:9::realtime",
+      "cpe:/a:redhat:enterprise_linux:9::resilientstorage",
+      "cpe:/a:redhat:enterprise_linux:9::sap",
+      "cpe:/a:redhat:enterprise_linux:9::sap_hana",
+      "cpe:/a:redhat:enterprise_linux:9::supplementary",
+      "cpe:/o:redhat:enterprise_linux:9",
+      "cpe:/o:redhat:enterprise_linux:9::baseos"
+    ]
+  }
+}
