@@ -24,66 +24,29 @@ import (
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	"github.com/MaineK00n/vuls-data-update/pkg/extract/util"
-	"github.com/MaineK00n/vuls-data-update/pkg/fetch/redhat/repository2cpe"
 )
 
 func main() {
-	if len(os.Args) != 5 {
-		fmt.Fprintln(os.Stderr, "[usage] go run main.go <vuls-data-update extracted redhat dir> <repository-to-cpe dir> <affected cpe list json> <output dir>")
+	if len(os.Args) != 4 {
+		fmt.Fprintln(os.Stderr, "[usage] go run main.go <vuls-data-update extracted redhat dir> <affected repository list json> <output dir>")
 		os.Exit(1)
 	}
-	if err := filter(os.Args[1], os.Args[2], os.Args[3], os.Args[4]); err != nil {
+	if err := filter(os.Args[1], os.Args[2], os.Args[3]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func filter(extractedDir, repository2cpeDir, affectedCpeListPath, outputDir string) error {
-	f, err := os.Open(filepath.Join(repository2cpeDir, "repository-to-cpe.json"))
+func filter(extractedDir, affectedRepositoryListPath, outputDir string) error {
+	f, err := os.Open(affectedRepositoryListPath)
 	if err != nil {
-		return fmt.Errorf("open %s. err: %w", filepath.Join(repository2cpeDir, "repository-to-cpe.json"), err)
+		return fmt.Errorf("open %s. err: %w", affectedRepositoryListPath, err)
 	}
 	defer f.Close()
 
-	var r2c repository2cpe.RepositoryToCPE
-	if err := json.NewDecoder(f).Decode(&r2c); err != nil {
-		return fmt.Errorf("decode %s. err: %w", filepath.Join(repository2cpeDir, "repository-to-cpe.json"), err)
-	}
-
-	c2r := make(map[string][]string)
-	for k, v := range r2c.Data {
-		for _, cpe := range v.Cpes {
-			if !slices.Contains(c2r[cpe], k) {
-				c2r[cpe] = append(c2r[cpe], k)
-			}
-		}
-	}
-
-	f, err = os.Open(affectedCpeListPath)
-	if err != nil {
-		return fmt.Errorf("open %s. err: %w", affectedCpeListPath, err)
-	}
-	defer f.Close()
-
-	var vsacm map[string]map[segmentTypes.DetectionTag][]string
-	if err := json.NewDecoder(f).Decode(&vsacm); err != nil {
-		return fmt.Errorf("decode %s. err: %w", affectedCpeListPath, err)
-	}
-
-	repom := make(map[string]map[segmentTypes.DetectionTag][]string)
-	for v, sacm := range vsacm {
-		if repom[v] == nil {
-			repom[v] = make(map[segmentTypes.DetectionTag][]string)
-		}
-		for stream, acs := range sacm {
-			for _, ac := range acs {
-				for _, r := range c2r[ac] {
-					if !slices.Contains(repom[v][stream], r) {
-						repom[v][stream] = append(repom[v][stream], r)
-					}
-				}
-			}
-		}
+	var repom map[string]map[segmentTypes.DetectionTag][]string
+	if err := json.NewDecoder(f).Decode(&repom); err != nil {
+		return fmt.Errorf("decode %s. err: %w", affectedRepositoryListPath, err)
 	}
 
 	if err := util.RemoveAll(outputDir); err != nil {
@@ -95,6 +58,10 @@ func filter(extractedDir, repository2cpeDir, affectedCpeListPath, outputDir stri
 		return fmt.Errorf("open %s. err: %w", filepath.Join(extractedDir, "datasource.json"), err)
 	}
 	defer srcf.Close()
+
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("mkdir -p %s. err: %w", outputDir, err)
+	}
 
 	dstf, err := os.Create(filepath.Join(outputDir, "datasource.json"))
 	if err != nil {

@@ -9,9 +9,8 @@ import (
 
 func Test_run(t *testing.T) {
 	type args struct {
-		extractedDir        string
-		repository2cpeDir   string
-		affectedCpeListPath string
+		extractedDir               string
+		affectedRepositoryListPath string
 	}
 	tests := []struct {
 		name    string
@@ -21,16 +20,15 @@ func Test_run(t *testing.T) {
 		{
 			name: "happy",
 			args: args{
-				extractedDir:        "./testdata/fixtures/vex",
-				repository2cpeDir:   "./testdata/fixtures/repository2cpe",
-				affectedCpeListPath: "./testdata/fixtures/affected_cpe_list.json",
+				extractedDir:               "./testdata/fixtures/vex",
+				affectedRepositoryListPath: "./testdata/fixtures/affected_repository_list.json",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
-			if err := filter(tt.args.extractedDir, tt.args.repository2cpeDir, tt.args.affectedCpeListPath, dir); (err != nil) != tt.wantErr {
+			if err := filter(tt.args.extractedDir, tt.args.affectedRepositoryListPath, dir); (err != nil) != tt.wantErr {
 				t.Errorf("run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
