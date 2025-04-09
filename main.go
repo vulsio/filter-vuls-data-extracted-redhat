@@ -42,7 +42,7 @@ func filter(extractedDir, affectedRepositoryListPath, outputDir string) error {
 	if err != nil {
 		return fmt.Errorf("open %s. err: %w", affectedRepositoryListPath, err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	var repom map[string]map[segmentTypes.DetectionTag][]string
 	if err := json.NewDecoder(f).Decode(&repom); err != nil {
@@ -57,7 +57,7 @@ func filter(extractedDir, affectedRepositoryListPath, outputDir string) error {
 	if err != nil {
 		return fmt.Errorf("open %s. err: %w", filepath.Join(extractedDir, "datasource.json"), err)
 	}
-	defer srcf.Close()
+	defer srcf.Close() //nolint:errcheck
 
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("mkdir -p %s. err: %w", outputDir, err)
@@ -67,7 +67,7 @@ func filter(extractedDir, affectedRepositoryListPath, outputDir string) error {
 	if err != nil {
 		return fmt.Errorf("create %s. err: %w", filepath.Join(outputDir, "datasource.json"), err)
 	}
-	defer dstf.Close()
+	defer dstf.Close() //nolint:errcheck
 
 	if _, err := io.Copy(dstf, srcf); err != nil {
 		return fmt.Errorf("copy %s to %s. err: %w", filepath.Join(extractedDir, "datasource.json"), filepath.Join(outputDir, "datasource.json"), err)
@@ -86,7 +86,7 @@ func filter(extractedDir, affectedRepositoryListPath, outputDir string) error {
 		if err != nil {
 			return fmt.Errorf("open %s. err: %w", path, err)
 		}
-		defer srcf.Close()
+		defer srcf.Close() //nolint:errcheck
 
 		var data dataTypes.Data
 		if err := json.NewDecoder(srcf).Decode(&data); err != nil {
