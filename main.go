@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"io/fs"
@@ -45,8 +45,8 @@ func filter(extractedDir, affectedRepositoryListPath, outputDir string) error {
 	defer f.Close() //nolint:errcheck
 
 	var repom map[string]map[segmentTypes.DetectionTag][]string
-	if err := json.NewDecoder(f).Decode(&repom); err != nil {
-		return fmt.Errorf("decode %s. err: %w", affectedRepositoryListPath, err)
+	if err := json.UnmarshalRead(f, &repom); err != nil {
+		return fmt.Errorf("unmarshal %s. err: %w", affectedRepositoryListPath, err)
 	}
 
 	if err := util.RemoveAll(outputDir); err != nil {
@@ -89,8 +89,8 @@ func filter(extractedDir, affectedRepositoryListPath, outputDir string) error {
 		defer srcf.Close() //nolint:errcheck
 
 		var data dataTypes.Data
-		if err := json.NewDecoder(srcf).Decode(&data); err != nil {
-			return fmt.Errorf("decode %s. err: %w", path, err)
+		if err := json.UnmarshalRead(srcf, &data); err != nil {
+			return fmt.Errorf("unmarshal %s. err: %w", path, err)
 		}
 
 		relpath, err := filepath.Rel(filepath.Join(extractedDir, "data"), path)
