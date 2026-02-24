@@ -256,6 +256,13 @@ func filterCriteria(root criteriaTypes.Criteria, repos []string) criteriaTypes.C
 			filteredCas = append(filteredCas, fca)
 		}
 	}
+
+	// Deduplicate sub-criterias that became identical after repository filtering
+	slices.SortFunc(filteredCas, criteriaTypes.Compare)
+	filteredCas = slices.CompactFunc(filteredCas, func(a, b criteriaTypes.Criteria) bool {
+		return criteriaTypes.Compare(a, b) == 0
+	})
+
 	root.Criterias = filteredCas
 
 	return root
