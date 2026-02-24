@@ -16,10 +16,6 @@ import (
 	detectionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection"
 	conditionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
-	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
-	necTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
-	fixstatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
-	vcpackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
@@ -239,146 +235,28 @@ func filterData(data dataTypes.Data, repom map[string]map[segmentTypes.Detection
 }
 
 func filterCriteria(root criteriaTypes.Criteria, repos []string) criteriaTypes.Criteria {
-	for i, ca := range root.Criterias {
-		if fca := filterCriteria(ca, repos); len(fca.Criterias) > 0 || len(fca.Criterions) > 0 {
-			root.Criterias[i] = fca
+	// Check this criteria node's Repositories against target repos.
+	// If a child criteria also has Repositories, the child's takes precedence (handled by recursion).
+	if len(root.Repositories) > 0 {
+		if !slices.ContainsFunc(root.Repositories, func(r string) bool {
+			return slices.Contains(repos, r)
+		}) {
+			// No overlap with target repos, discard entire branch
+			return criteriaTypes.Criteria{}
 		}
+		// Overlap found, nil out Repositories (consumed by filtering)
+		root.Repositories = nil
 	}
 
-	fcns := make([]criterionTypes.Criterion, 0, len(root.Criterions))
-	for _, cn := range root.Criterions {
-		fcn := func() *criterionTypes.Criterion {
-			switch cn.Type {
-			case criterionTypes.CriterionTypeVersion:
-				switch cn.Version.FixStatus {
-				case nil: // cn.Version.Vulnerable == false
-					switch cn.Version.Package.Type {
-					case vcpackageTypes.PackageTypeBinary:
-						switch len(cn.Version.Package.Binary.Repositories) {
-						case 0:
-							cn.Version.Package.Binary.Repositories = nil
-							return &cn
-						default:
-							if slices.ContainsFunc(cn.Version.Package.Binary.Repositories, func(r string) bool {
-								return slices.Contains(repos, r)
-							}) {
-								cn.Version.Package.Binary.Repositories = nil
-								return &cn
-							}
-							return nil
-						}
-					case vcpackageTypes.PackageTypeSource:
-						switch len(cn.Version.Package.Source.Repositories) {
-						case 0:
-							cn.Version.Package.Source.Repositories = nil
-							return &cn
-						default:
-							if slices.ContainsFunc(cn.Version.Package.Source.Repositories, func(r string) bool {
-								return slices.Contains(repos, r)
-							}) {
-								cn.Version.Package.Source.Repositories = nil
-								return &cn
-							}
-							return nil
-						}
-					default:
-						return &cn
-					}
-				default: // cn.Version.Vulnerable == true
-					switch cn.Version.FixStatus.Class {
-					case fixstatusTypes.ClassFixed:
-						switch cn.Version.Package.Type {
-						case vcpackageTypes.PackageTypeBinary:
-							if slices.ContainsFunc(cn.Version.Package.Binary.Repositories, func(r string) bool {
-								return slices.Contains(repos, r)
-							}) {
-								cn.Version.Package.Binary.Repositories = nil
-								return &cn
-							}
-							return nil
-						case vcpackageTypes.PackageTypeSource:
-							if slices.ContainsFunc(cn.Version.Package.Source.Repositories, func(r string) bool {
-								return slices.Contains(repos, r)
-							}) {
-								cn.Version.Package.Source.Repositories = nil
-								return &cn
-							}
-							return nil
-						default:
-							return &cn
-						}
-					case fixstatusTypes.ClassUnfixed, fixstatusTypes.ClassUnknown:
-						switch cn.Version.Package.Type {
-						case vcpackageTypes.PackageTypeBinary:
-							switch len(cn.Version.Package.Binary.Repositories) {
-							case 0:
-								cn.Version.Package.Binary.Repositories = nil
-								return &cn
-							default:
-								if slices.ContainsFunc(cn.Version.Package.Binary.Repositories, func(r string) bool {
-									return slices.Contains(repos, r)
-								}) {
-									cn.Version.Package.Binary.Repositories = nil
-									return &cn
-								}
-								return nil
-							}
-						case vcpackageTypes.PackageTypeSource:
-							switch len(cn.Version.Package.Source.Repositories) {
-							case 0:
-								cn.Version.Package.Source.Repositories = nil
-								return &cn
-							default:
-								if slices.ContainsFunc(cn.Version.Package.Source.Repositories, func(r string) bool {
-									return slices.Contains(repos, r)
-								}) {
-									cn.Version.Package.Source.Repositories = nil
-									return &cn
-								}
-								return nil
-							}
-						default:
-							return &cn
-						}
-					default:
-						return &cn
-					}
-				}
-			case criterionTypes.CriterionTypeNoneExist:
-				switch cn.NoneExist.Type {
-				case necTypes.PackageTypeBinary:
-					if slices.ContainsFunc(cn.NoneExist.Binary.Repositories, func(r string) bool {
-						return slices.Contains(repos, r)
-					}) {
-						cn.NoneExist.Binary.Repositories = nil
-						return &cn
-					}
-					return nil
-				case necTypes.PackageTypeSource:
-					if slices.ContainsFunc(cn.NoneExist.Source.Repositories, func(r string) bool {
-						return slices.Contains(repos, r)
-					}) {
-						cn.NoneExist.Source.Repositories = nil
-						return &cn
-					}
-					return nil
-				default:
-					return &cn
-				}
-			default:
-				return &cn
-			}
-		}()
-		if fcn == nil {
-			continue
-		}
-		if !slices.ContainsFunc(fcns, func(e criterionTypes.Criterion) bool {
-			return criterionTypes.Compare(e, *fcn) == 0
-		}) {
-			fcns = append(fcns, *fcn)
+	// Recursively filter sub-criterias
+	filteredCas := make([]criteriaTypes.Criteria, 0, len(root.Criterias))
+	for _, ca := range root.Criterias {
+		fca := filterCriteria(ca, repos)
+		if len(fca.Criterias) > 0 || len(fca.Criterions) > 0 {
+			filteredCas = append(filteredCas, fca)
 		}
 	}
-	root.Criterions = fcns
+	root.Criterias = filteredCas
 
 	return root
 }

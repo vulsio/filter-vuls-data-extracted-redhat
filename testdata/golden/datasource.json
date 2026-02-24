@@ -1,4 +1,16 @@
 {
 	"id": "redhat-vex",
-	"name": "RedHat Enterprise Linux CSAF VEX"
+	"name": "RedHat Enterprise Linux CSAF VEX",
+	"raw": [
+		{
+			"url": "ghcr.io/vulsio/vuls-data-db:vuls-data-raw-redhat-vex",
+			"commit": "51ea56b2c9ac308ac2088142b1a8f6eef3234e89",
+			"date": "2026-02-17T01:32:16Z"
+		},
+		{
+			"url": "ghcr.io/vulsio/vuls-data-db:vuls-data-raw-redhat-repository-to-cpe",
+			"commit": "1923ac999aefd384450a5bc6b46c54271dac55a7",
+			"date": "2026-02-11T01:46:00Z"
+		}
+	]
 }
