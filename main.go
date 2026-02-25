@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json/v2"
 	"fmt"
 	"io"
@@ -16,6 +17,8 @@ import (
 	detectionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection"
 	conditionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
+	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
+	fixstatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
@@ -127,11 +130,33 @@ func filterData(data dataTypes.Data, repom map[string]map[segmentTypes.Detection
 							Criteria: fca,
 							Tag:      segmentTypes.DetectionTag(fmt.Sprintf("%s:%s", stream, cond.Tag)),
 						})
-						tm[cond.Tag] = append(tm[cond.Tag], segmentTypes.DetectionTag(fmt.Sprintf("%s:%s", stream, cond.Tag)))
 					}
 				}
 			}
 		}
+		// Merge conditions with identical criteria (produced by streams sharing the same repos).
+		// Keep the lexicographically larger tag.
+		merged := make([]conditionTypes.Condition, 0, len(conds))
+		for _, cond := range conds {
+			if idx := slices.IndexFunc(merged, func(e conditionTypes.Condition) bool {
+				return criteriaTypes.Compare(e.Criteria, cond.Criteria) == 0
+			}); idx >= 0 {
+				if cmp.Compare(cond.Tag, merged[idx].Tag) > 0 {
+					merged[idx].Tag = cond.Tag
+				}
+			} else {
+				merged = append(merged, cond)
+			}
+		}
+		conds = merged
+
+		// Build tag mapping from original tags to the merged (surviving) stream tags.
+		for _, cond := range conds {
+			// cond.Tag is "stream:originalTag"; extract the original tag suffix.
+			_, origTag, _ := strings.Cut(string(cond.Tag), ":")
+			tm[segmentTypes.DetectionTag(origTag)] = append(tm[segmentTypes.DetectionTag(origTag)], cond.Tag)
+		}
+
 		if len(conds) > 0 {
 			ds = append(ds, detectionTypes.Detection{
 				Ecosystem:  d.Ecosystem,
@@ -237,7 +262,8 @@ func filterData(data dataTypes.Data, repom map[string]map[segmentTypes.Detection
 func filterCriteria(root criteriaTypes.Criteria, repos []string) criteriaTypes.Criteria {
 	// Check this criteria node's Repositories against target repos.
 	// If a child criteria also has Repositories, the child's takes precedence (handled by recursion).
-	if len(root.Repositories) > 0 {
+	hadRepositories := len(root.Repositories) > 0
+	if hadRepositories {
 		if !slices.ContainsFunc(root.Repositories, func(r string) bool {
 			return slices.Contains(repos, r)
 		}) {
@@ -246,6 +272,23 @@ func filterCriteria(root criteriaTypes.Criteria, repos []string) criteriaTypes.C
 		}
 		// Overlap found, nil out Repositories (consumed by filtering)
 		root.Repositories = nil
+	}
+
+	// When this criteria originally had no Repositories, remove "fixed" criterions.
+	// "fixed" means a patch was delivered via a specific repo; without repo info
+	// we cannot confirm relevance to the target repos.
+	// (unfixed/unknown criterions are kept because the vulnerability may still apply.)
+	if !hadRepositories {
+		filtered := make([]criterionTypes.Criterion, 0, len(root.Criterions))
+		for _, cn := range root.Criterions {
+			if cn.Type == criterionTypes.CriterionTypeVersion &&
+				cn.Version != nil && cn.Version.FixStatus != nil &&
+				cn.Version.FixStatus.Class == fixstatusTypes.ClassFixed {
+				continue
+			}
+			filtered = append(filtered, cn)
+		}
+		root.Criterions = filtered
 	}
 
 	// Recursively filter sub-criterias
@@ -262,6 +305,28 @@ func filterCriteria(root criteriaTypes.Criteria, repos []string) criteriaTypes.C
 	filteredCas = slices.CompactFunc(filteredCas, func(a, b criteriaTypes.Criteria) bool {
 		return criteriaTypes.Compare(a, b) == 0
 	})
+
+	// Flatten: if parent is OR and a child is also OR with no Repositories,
+	// hoist the child's criterions/criterias into the parent.
+	// OR(OR(a,b), OR(a,c)) == OR(a,b,c)
+	if root.Operator == criteriaTypes.CriteriaOperatorTypeOR {
+		var kept []criteriaTypes.Criteria
+		for _, ca := range filteredCas {
+			if ca.Operator == criteriaTypes.CriteriaOperatorTypeOR && len(ca.Repositories) == 0 {
+				root.Criterions = append(root.Criterions, ca.Criterions...)
+				root.Criterias = append(root.Criterias, ca.Criterias...)
+			} else {
+				kept = append(kept, ca)
+			}
+		}
+		filteredCas = kept
+
+		// Deduplicate criterions that were hoisted from multiple sub-criterias
+		slices.SortFunc(root.Criterions, criterionTypes.Compare)
+		root.Criterions = slices.CompactFunc(root.Criterions, func(a, b criterionTypes.Criterion) bool {
+			return criterionTypes.Compare(a, b) == 0
+		})
+	}
 
 	root.Criterias = filteredCas
 
