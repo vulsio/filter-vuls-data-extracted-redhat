@@ -135,13 +135,13 @@ func filterData(data dataTypes.Data, repom map[string]map[segmentTypes.Detection
 			}
 		}
 		// Merge conditions with identical criteria (produced by streams sharing the same repos).
-		// Keep the lexicographically larger tag.
+		// Keep the tag with higher priority per Red Hat stream preference.
 		merged := make([]conditionTypes.Condition, 0, len(conds))
 		for _, cond := range conds {
 			if idx := slices.IndexFunc(merged, func(e conditionTypes.Condition) bool {
 				return criteriaTypes.Compare(e.Criteria, cond.Criteria) == 0
 			}); idx >= 0 {
-				if cmp.Compare(cond.Tag, merged[idx].Tag) > 0 {
+				if compareTag(cond.Tag, merged[idx].Tag) > 0 {
 					merged[idx].Tag = cond.Tag
 				}
 			} else {
@@ -331,4 +331,33 @@ func filterCriteria(root criteriaTypes.Criteria, repos []string) criteriaTypes.C
 	root.Criterias = filteredCas
 
 	return root
+}
+
+// compareTag compares two detection tags using Red Hat stream preference.
+// Tags have the format "stream:originalTag". The stream prefix determines priority:
+//
+//	-including-unpatched   → 4 (highest)
+//	-extras-including-unpatched → 3
+//	-supplementary         → 2
+//	default                → 1 (lowest)
+//
+// When priorities are equal, falls back to lexicographic comparison.
+func compareTag(a, b segmentTypes.DetectionTag) int {
+	preference := func(tag segmentTypes.DetectionTag) int {
+		lhs, _, _ := strings.Cut(string(tag), ":")
+		switch {
+		case strings.HasSuffix(lhs, "-including-unpatched"):
+			return 4
+		case strings.HasSuffix(lhs, "-extras-including-unpatched"):
+			return 3
+		case strings.HasSuffix(lhs, "-supplementary"):
+			return 2
+		default:
+			return 1
+		}
+	}
+	if r := cmp.Compare(preference(a), preference(b)); r != 0 {
+		return r
+	}
+	return cmp.Compare(a, b)
 }
