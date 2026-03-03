@@ -2,7 +2,7 @@ module filter-vuls-data-extracted-redhat
 
 go 1.26
 
-require github.com/MaineK00n/vuls-data-update v0.0.0-20260227061608-37aa00cdf7c9
+require github.com/MaineK00n/vuls-data-update v0.0.0-20260303093643-b8a08531c5a9
 
 require (
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
