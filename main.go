@@ -115,6 +115,29 @@ func filter(extractedDir, affectedRepositoryListPath, outputDir string) error {
 }
 
 func filterData(data dataTypes.Data, repom map[string]map[segmentTypes.DetectionTag][]string) *dataTypes.Data {
+	// Pre-index advisory/vulnerability Contents by segment so the merge step can
+	// verify that two conditions reference the same set of Contents before merging.
+	advisoryContentsBySegment := make(map[segmentTypes.Segment][]advisoryContentTypes.Content)
+	for _, a := range data.Advisories {
+		for _, s := range a.Segments {
+			advisoryContentsBySegment[s] = append(advisoryContentsBySegment[s], a.Content)
+		}
+	}
+	for k, v := range advisoryContentsBySegment {
+		slices.SortFunc(v, advisoryContentTypes.Compare)
+		advisoryContentsBySegment[k] = v
+	}
+	vulnContentsBySegment := make(map[segmentTypes.Segment][]vulnerabilityContentTypes.Content)
+	for _, v := range data.Vulnerabilities {
+		for _, s := range v.Segments {
+			vulnContentsBySegment[s] = append(vulnContentsBySegment[s], v.Content)
+		}
+	}
+	for k, v := range vulnContentsBySegment {
+		slices.SortFunc(v, vulnerabilityContentTypes.Compare)
+		vulnContentsBySegment[k] = v
+	}
+
 	ds := make([]detectionTypes.Detection, 0, len(data.Detections))
 	tm := make(map[segmentTypes.DetectionTag][]segmentTypes.DetectionTag)
 	for _, d := range data.Detections {
@@ -136,10 +159,22 @@ func filterData(data dataTypes.Data, repom map[string]map[segmentTypes.Detection
 		}
 		// Merge conditions with identical criteria (produced by streams sharing the same repos).
 		// Keep the tag with higher priority per Red Hat stream preference.
+		// Only merge when both original tags reference the same advisory/vulnerability Contents,
+		// so that merging does not lose any linked information.
 		merged := make([]conditionTypes.Condition, 0, len(conds))
 		for _, cond := range conds {
+			_, condOrig, _ := strings.Cut(string(cond.Tag), ":")
+			condSeg := segmentTypes.Segment{Ecosystem: d.Ecosystem, Tag: segmentTypes.DetectionTag(condOrig)}
 			if idx := slices.IndexFunc(merged, func(e conditionTypes.Condition) bool {
-				return criteriaTypes.Compare(e.Criteria, cond.Criteria) == 0
+				if criteriaTypes.Compare(e.Criteria, cond.Criteria) != 0 {
+					return false
+				}
+				_, eOrig, _ := strings.Cut(string(e.Tag), ":")
+				eSeg := segmentTypes.Segment{Ecosystem: d.Ecosystem, Tag: segmentTypes.DetectionTag(eOrig)}
+				return slices.EqualFunc(advisoryContentsBySegment[condSeg], advisoryContentsBySegment[eSeg],
+					func(a, b advisoryContentTypes.Content) bool { return advisoryContentTypes.Compare(a, b) == 0 }) &&
+					slices.EqualFunc(vulnContentsBySegment[condSeg], vulnContentsBySegment[eSeg],
+						func(a, b vulnerabilityContentTypes.Content) bool { return vulnerabilityContentTypes.Compare(a, b) == 0 })
 			}); idx >= 0 {
 				if compareTag(cond.Tag, merged[idx].Tag) > 0 {
 					merged[idx].Tag = cond.Tag
@@ -186,10 +221,10 @@ func filterData(data dataTypes.Data, repom map[string]map[segmentTypes.Detection
 				return s.Ecosystem == e.Ecosystem && slices.Contains(tm[s.Tag], e.Tag)
 			}) {
 				for _, tag := range tm[s.Tag] {
-					ss = append(ss, segmentTypes.Segment{
-						Ecosystem: s.Ecosystem,
-						Tag:       tag,
-					})
+					seg := segmentTypes.Segment{Ecosystem: s.Ecosystem, Tag: tag}
+					if !slices.Contains(ss, seg) {
+						ss = append(ss, seg)
+					}
 				}
 			}
 		}
@@ -220,10 +255,10 @@ func filterData(data dataTypes.Data, repom map[string]map[segmentTypes.Detection
 				return s.Ecosystem == e.Ecosystem && slices.Contains(tm[s.Tag], e.Tag)
 			}) {
 				for _, tag := range tm[s.Tag] {
-					ss = append(ss, segmentTypes.Segment{
-						Ecosystem: s.Ecosystem,
-						Tag:       tag,
-					})
+					seg := segmentTypes.Segment{Ecosystem: s.Ecosystem, Tag: tag}
+					if !slices.Contains(ss, seg) {
+						ss = append(ss, seg)
+					}
 				}
 			}
 		}
